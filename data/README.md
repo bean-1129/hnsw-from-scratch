@@ -1,12 +1,12 @@
 # Datasets
 
 This directory holds the binary files the C++ engine reads. Nothing here is
-committed to git (see `.gitignore`) — the files are generated from the
+committed to git (see `.gitignore`); the files are generated from the
 ann-benchmarks HDF5 archive.
 
 ## Reference dataset
 
-**glove-100-angular** — 100-dimensional GloVe word embeddings, angular (cosine)
+**glove-100-angular**: 100-dimensional GloVe word embeddings, angular (cosine)
 distance.
 
 | Property | Value |
@@ -66,8 +66,8 @@ regenerate any ground truth with the C++ tool, which is exact and multi-threaded
 | Symptom | Cause | Status |
 |---|---|---|
 | `command not found: python` | many systems only provide `python3` | use `python3 python/convert_hdf5.py …` |
-| `HTTP Error 403: Forbidden` | the CDN in front of ann-benchmarks.com rejects the default `Python-urllib/x.y` User-Agent | handled — the script sends its own User-Agent |
-| `CERTIFICATE_VERIFY_FAILED` | a python.org macOS install ships without a CA bundle until `Install Certificates.command` is run | handled — the script falls back to `certifi` or the system store at `/etc/ssl/cert.pem`, without ever disabling verification |
+| `HTTP Error 403: Forbidden` | the CDN in front of ann-benchmarks.com rejects the default `Python-urllib/x.y` User-Agent | handled: the script sends its own User-Agent |
+| `CERTIFICATE_VERIFY_FAILED` | a python.org macOS install ships without a CA bundle until `Install Certificates.command` is run | handled: the script falls back to `certifi` or the system store at `/etc/ssl/cert.pem`, without ever disabling verification |
 | `ModuleNotFoundError: No module named 'h5py'` | the conversion step needs h5py (the download does not) | run `python3 -m pip install h5py` |
 
 An interrupted download leaves no `.hdf5` behind: bytes go to a `.part` file that
@@ -79,7 +79,7 @@ transfer can never be mistaken for a complete archive on the next run.
 Both formats are flat, header-prefixed and written in native (little endian)
 byte order. The C++ side never reads HDF5.
 
-`*.fbin` — vectors:
+`*.fbin` (vectors):
 
 ```
 uint32   number_of_vectors
@@ -87,7 +87,7 @@ uint32   dimension
 float32  vectors[number_of_vectors * dimension]     row major
 ```
 
-`*.ibin` — neighbor ids:
+`*.ibin` (neighbor ids):
 
 ```
 uint32   number_of_queries

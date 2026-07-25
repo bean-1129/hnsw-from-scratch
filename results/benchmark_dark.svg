@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="530" viewBox="0 0 960 530" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" role="img" aria-label="Recall at 10 versus queries per second on glove-100-angular">
+<rect width="960" height="530" fill="#1a1a19"/>
+<text x="74" y="34" fill="#ffffff" font-size="17" font-weight="600">Recall@10 vs. throughput on glove-100-angular (1.18M &#215; 100)</text>
+<text x="74" y="55" fill="#c3c2b7" font-size="12.5">Single thread, batch size 1, Apple M4. Each point is one efSearch value (16 &#8594; 512, left to right). Up and to the right is better.</text>
+<line x1="74" y1="76" x2="90" y2="76" stroke="#3987e5" stroke-width="2" stroke-linecap="round"/>
+<circle cx="82" cy="76" r="3.5" fill="#3987e5"/>
+<text x="97" y="80" fill="#c3c2b7" font-size="12">this impl, M=16</text>
+<line x1="200.0" y1="76" x2="216.0" y2="76" stroke="#d95926" stroke-width="2" stroke-linecap="round"/>
+<circle cx="208.0" cy="76" r="3.5" fill="#d95926"/>
+<text x="223.0" y="80" fill="#c3c2b7" font-size="12">this impl, M=32</text>
+<line x1="326.0" y1="76" x2="342.0" y2="76" stroke="#199e70" stroke-width="2" stroke-linecap="round"/>
+<circle cx="334.0" cy="76" r="3.5" fill="#199e70"/>
+<text x="349.0" y="80" fill="#c3c2b7" font-size="12">FAISS, M=16</text>
+<line x1="425.6" y1="76" x2="441.6" y2="76" stroke="#898781" stroke-width="2" stroke-dasharray="1 3" stroke-linecap="round"/>
+<text x="448.6" y="80" fill="#c3c2b7" font-size="12">exact scan</text>
+<line x1="74" y1="402.9" x2="770" y2="402.9" stroke="#2c2c2a" stroke-width="1"/>
+<text x="64" y="406.9" fill="#898781" font-size="11.5" text-anchor="end">100</text>
+<line x1="74" y1="282.2" x2="770" y2="282.2" stroke="#2c2c2a" stroke-width="1"/>
+<text x="64" y="286.2" fill="#898781" font-size="11.5" text-anchor="end">1,000</text>
+<line x1="74" y1="161.6" x2="770" y2="161.6" stroke="#2c2c2a" stroke-width="1"/>
+<text x="64" y="165.6" fill="#898781" font-size="11.5" text-anchor="end">10,000</text>
+<line x1="148.0" y1="104" x2="148.0" y2="466" stroke="#2c2c2a" stroke-width="1"/>
+<text x="148.0" y="488" fill="#898781" font-size="11.5" text-anchor="middle">0.6</text>
+<line x1="296.1" y1="104" x2="296.1" y2="466" stroke="#2c2c2a" stroke-width="1"/>
+<text x="296.1" y="488" fill="#898781" font-size="11.5" text-anchor="middle">0.7</text>
+<line x1="444.2" y1="104" x2="444.2" y2="466" stroke="#2c2c2a" stroke-width="1"/>
+<text x="444.2" y="488" fill="#898781" font-size="11.5" text-anchor="middle">0.8</text>
+<line x1="592.3" y1="104" x2="592.3" y2="466" stroke="#2c2c2a" stroke-width="1"/>
+<text x="592.3" y="488" fill="#898781" font-size="11.5" text-anchor="middle">0.9</text>
+<line x1="740.4" y1="104" x2="740.4" y2="466" stroke="#2c2c2a" stroke-width="1"/>
+<text x="740.4" y="488" fill="#898781" font-size="11.5" text-anchor="middle">1.0</text>
+<line x1="74" y1="466" x2="770" y2="466" stroke="#383835" stroke-width="1"/>
+<text x="422.0" y="512" fill="#c3c2b7" font-size="12.5" text-anchor="middle">Recall@10</text>
+<text transform="translate(20,285.0) rotate(-90)" fill="#c3c2b7" font-size="12.5" text-anchor="middle">Queries per second (log scale)</text>
+<line x1="74" y1="448.6" x2="740.4" y2="448.6" stroke="#898781" stroke-width="1" stroke-dasharray="1 3"/>
+<circle cx="740.4" cy="448.6" r="4.5" fill="#898781" stroke="#1a1a19" stroke-width="2"/>
+<text x="728.4" y="438.6" fill="#c3c2b7" font-size="11.5" text-anchor="end">brute force (exact): 41.8 QPS</text>
+<polyline points="104.0,132.2 265.0,157.9 394.7,186.0 495.1,215.8 572.4,246.8 632.8,278.7" fill="none" stroke="#3987e5" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="104.0" cy="132.2" r="4.5" fill="#3987e5" stroke="#1a1a19" stroke-width="2"/>
+<circle cx="265.0" cy="157.9" r="4.5" fill="#3987e5" stroke="#1a1a19" stroke-width="2"/>
+<circle cx="394.7" cy="186.0" r="4.5" fill="#3987e5" stroke="#1a1a19" stroke-width="2"/>
+<circle cx="495.1" cy="215.8" r="4.5" fill="#3987e5" stroke="#1a1a19" stroke-width="2"/>
+<circle cx="572.4" cy="246.8" r="4.5" fill="#3987e5" stroke="#1a1a19" stroke-width="2"/>
+<circle cx="632.8" cy="278.7" r="4.5" fill="#3987e5" stroke="#1a1a19" stroke-width="2"/>
+<path d="M 639.8 278.7 L 782.0 272.7" fill="none" stroke="#898781" stroke-width="1"/>
+<text x="787.0" y="276.7" fill="#ffffff" font-size="12" font-weight="500">this M=16</text>
+<polyline points="269.9,157.1 405.1,182.9 511.8,211.1 593.0,241.2 653.5,272.6 696.9,305.0" fill="none" stroke="#d95926" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="269.9" cy="157.1" r="4.5" fill="#d95926" stroke="#1a1a19" stroke-width="2"/>
+<circle cx="405.1" cy="182.9" r="4.5" fill="#d95926" stroke="#1a1a19" stroke-width="2"/>
+<circle cx="511.8" cy="211.1" r="4.5" fill="#d95926" stroke="#1a1a19" stroke-width="2"/>
+<circle cx="593.0" cy="241.2" r="4.5" fill="#d95926" stroke="#1a1a19" stroke-width="2"/>
+<circle cx="653.5" cy="272.6" r="4.5" fill="#d95926" stroke="#1a1a19" stroke-width="2"/>
+<circle cx="696.9" cy="305.0" r="4.5" fill="#d95926" stroke="#1a1a19" stroke-width="2"/>
+<path d="M 703.9 305.0 L 782.0 310.7" fill="none" stroke="#898781" stroke-width="1"/>
+<text x="787.0" y="314.7" fill="#ffffff" font-size="12" font-weight="500">this M=32</text>
+<polyline points="101.1,134.0 267.1,160.2 396.9,189.1 495.6,221.0 567.9,255.0 625.2,291.4" fill="none" stroke="#199e70" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="101.1" cy="134.0" r="4.5" fill="#199e70" stroke="#1a1a19" stroke-width="2"/>
+<circle cx="267.1" cy="160.2" r="4.5" fill="#199e70" stroke="#1a1a19" stroke-width="2"/>
+<circle cx="396.9" cy="189.1" r="4.5" fill="#199e70" stroke="#1a1a19" stroke-width="2"/>
+<circle cx="495.6" cy="221.0" r="4.5" fill="#199e70" stroke="#1a1a19" stroke-width="2"/>
+<circle cx="567.9" cy="255.0" r="4.5" fill="#199e70" stroke="#1a1a19" stroke-width="2"/>
+<circle cx="625.2" cy="291.4" r="4.5" fill="#199e70" stroke="#1a1a19" stroke-width="2"/>
+<path d="M 632.2 291.4 L 782.0 291.7" fill="none" stroke="#898781" stroke-width="1"/>
+<text x="787.0" y="295.7" fill="#ffffff" font-size="12" font-weight="500">FAISS M=16</text>
+</svg>

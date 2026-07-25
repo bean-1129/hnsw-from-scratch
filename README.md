@@ -6,7 +6,7 @@ A complete, dependency-free C++17 implementation of **Hierarchical Navigable Sma
 > *Efficient and Robust Approximate Nearest Neighbor Search Using Hierarchical Navigable Small World Graphs.*
 > IEEE TPAMI 2018 ([arXiv:1603.09320](https://arxiv.org/abs/1603.09320))
 
-Every algorithm in the paper — the insertion procedure, the layer search, both neighbor selection strategies and the k-NN search — is implemented here from the pseudocode. **No hnswlib, no FAISS, no ANN library of any kind is linked into the C++ engine.** FAISS appears exactly once, in a standalone Python script, as an external yardstick to measure this implementation against.
+Every algorithm in the paper (the insertion procedure, the layer search, both neighbor selection strategies and the k-NN search) is implemented here from the pseudocode. **No hnswlib, no FAISS, no ANN library of any kind is linked into the C++ engine.** FAISS appears exactly once, in a standalone Python script, as an external yardstick to measure this implementation against.
 
 ---
 
@@ -34,7 +34,7 @@ Every algorithm in the paper — the insertion procedure, the layer search, both
 | Component | Where | Notes |
 |---|---|---|
 | Binary vector loader | `src/vector_loader.cpp` | `.fbin` / `.ibin`, contiguous storage, normalize-once |
-| Distance kernels | `src/distance.cpp` | dot product, cosine, squared L2 — plain scalar loops |
+| Distance kernels | `src/distance.cpp` | dot product, cosine, squared L2; plain scalar loops |
 | Exact brute-force search | `src/brute_force.cpp` | correctness oracle, multi-threaded batch mode |
 | Recall@k evaluator | `src/recall.cpp` | the ann-benchmarks definition |
 | Layered graph | `src/graph.cpp` | topology, degree caps, serialization, statistics |
@@ -43,6 +43,7 @@ Every algorithm in the paper — the insertion procedure, the layer search, both
 | CLI | `src/main.cpp` | `build`, `search`, `benchmark`, `save`, `load`, `bruteforce` |
 | Dataset conversion | `python/convert_hdf5.py` | HDF5 → `.fbin` / `.ibin` |
 | FAISS comparison | `python/faiss_reference.py` | identical protocol, identical CSV schema |
+| Result chart | `python/plot_results.py` | recall/QPS SVG, light + dark, no dependencies |
 | Unit tests | `tests/` | 5 binaries, no test framework needed |
 
 ## Architecture
@@ -94,11 +95,11 @@ The mapping from the paper to the code is one-to-one:
 
 | Paper | Code | Purpose |
 |---|---|---|
-| Algorithm 1 — INSERT | `HnswIndex::addPoint` | full insertion procedure |
-| Algorithm 2 — SEARCH-LAYER | `HnswIndex::searchLayer` | beam search inside one layer |
-| Algorithm 3 — SELECT-NEIGHBORS-SIMPLE | `HnswIndex::selectNeighborsSimple` | naive "keep the M closest" |
-| Algorithm 4 — SELECT-NEIGHBORS-HEURISTIC | `HnswIndex::selectNeighborsHeuristic` | diversity pruning (the default) |
-| Algorithm 5 — K-NN-SEARCH | `HnswIndex::searchKnn` | greedy descent + layer-0 beam search |
+| Algorithm 1: INSERT | `HnswIndex::addPoint` | full insertion procedure |
+| Algorithm 2: SEARCH-LAYER | `HnswIndex::searchLayer` | beam search inside one layer |
+| Algorithm 3: SELECT-NEIGHBORS-SIMPLE | `HnswIndex::selectNeighborsSimple` | naive "keep the M closest" |
+| Algorithm 4: SELECT-NEIGHBORS-HEURISTIC | `HnswIndex::selectNeighborsHeuristic` | diversity pruning (the default) |
+| Algorithm 5: K-NN-SEARCH | `HnswIndex::searchKnn` | greedy descent + layer-0 beam search |
 
 ### Insertion (Algorithm 1)
 
@@ -109,7 +110,7 @@ The mapping from the paper to the code is one-to-one:
 4. Whenever a reverse edge overflows the degree cap (`Mmax` above layer 0, `Mmax0 = 2M` on layer 0), re-run the heuristic **from that neighbor's own point of view** to decide which link to drop.
 5. If the new element's level exceeds the current top level, it becomes the new entry point.
 
-Following the pseudocode literally, the entire candidate set `W` — not just its nearest element — is carried down as the entry point set for the next layer.
+Following the pseudocode literally, the entire candidate set `W`, not just its nearest element, is carried down as the entry point set for the next layer.
 
 ### Neighbor selection (Algorithm 4)
 
@@ -121,8 +122,8 @@ keep e  ⟺  dist(e, base) < min over r in R of dist(e, r)
 
 This is a relative-neighborhood-graph style rule. It deliberately refuses links that point into a region already covered by an existing link, which preserves the long-range edges that make the graph navigable, and prevents a densely clustered region from consuming every link slot of a node. Both optional flags of the paper are implemented:
 
-- `extendCandidates` — also consider the neighbors of the candidates (off by default; useful for strongly clustered data).
-- `keepPrunedConnections` — top up the selection with the best rejected candidates so the node reaches its full out-degree (on by default).
+- `extendCandidates`: also consider the neighbors of the candidates (off by default; useful for strongly clustered data).
+- `keepPrunedConnections`: top up the selection with the best rejected candidates so the node reaches its full out-degree (on by default).
 
 ### Search (Algorithm 5)
 
@@ -130,7 +131,7 @@ Layers `L … 1` are traversed greedily (`ef = 1`); layer 0 runs a beam search w
 
 `SEARCH-LAYER` uses two heaps over one shared scratch buffer (a min-heap of candidates to expand, a max-heap of the best `ef` found) plus an **epoch-tagged visited list**: a `uint32` generation counter per node makes "clear the visited set" an O(1) operation instead of O(n), and removes the per-query allocation that otherwise dominates a short query.
 
-The scratch buffer lives in a `SearchContext`. `searchKnn` uses a `thread_local` one by default, or you can pass your own — several threads may query one `const HnswIndex` concurrently with no shared mutable state.
+The scratch buffer lives in a `SearchContext`. `searchKnn` uses a `thread_local` one by default, or you can pass your own, so several threads may query one `const HnswIndex` concurrently with no shared mutable state.
 
 ## Parameters
 
@@ -141,17 +142,17 @@ The scratch buffer lives in a `SearchContext`. `searchKnn` uses a `thread_local`
 | `efSearch` | `--ef` | 64 | candidate list size at query time; the recall/latency dial |
 | seed | `--seed` | 100 | RNG seed for level assignment; fixing it makes builds bit-reproducible |
 | metric | `--metric` | `cosine` | `cosine` (normalized) or `l2` |
-| `mL` | — | `1 / ln(M)` | level multiplier, the paper's optimum |
+| `mL` | n/a | `1 / ln(M)` | level multiplier, the paper's optimum |
 
 `M` and `efConstruction` are build-time decisions; `efSearch` can be changed per query without rebuilding, which is why the benchmark sweeps it.
 
-Practical guidance, backed by the [parameter study](#parameter-study-100k-subset-same-10000-queries) below: **spend your build budget on `M` before `efConstruction`.** The default `M = 16` is a reasonable starting point up to ~10⁵ vectors, but for a million-scale, high-dimensional dataset such as GloVe, `M = 32` is worth roughly ten times more recall than raising `efConstruction` from 200 to 500 — at the cost of a proportionally larger graph and a slower build.
+Practical guidance, backed by the [measured results](#measured-results) below: **spend your build budget on `M` before `efConstruction`.** The default `M = 16` is a reasonable starting point up to ~10⁵ vectors, but on the full 1.18M-vector GloVe set, `M = 32` lifts Recall@10 from 0.9274 to 0.9706 at ef=512, while raising `efConstruction` from 200 to 500 is worth only ~0.003. Budget for it, though: the same change made the build 5.9× slower (54 minutes, single-threaded) and the graph 60% larger.
 
 ## Data format
 
 Two flat, header-prefixed binary formats in native (little endian) byte order. **The C++ code never reads HDF5.**
 
-`*.fbin` — vectors:
+`*.fbin` (vectors):
 
 ```
 offset 0   uint32   number_of_vectors
@@ -159,7 +160,7 @@ offset 4   uint32   dimension
 offset 8   float32  vectors[number_of_vectors * dimension]   (row major)
 ```
 
-`*.ibin` — ground truth neighbor ids:
+`*.ibin` (ground truth neighbor ids):
 
 ```
 offset 0   uint32   number_of_queries
@@ -212,7 +213,7 @@ Build and persist an index:
     --M 16 --ef-construction 200 --seed 42
 ```
 
-The build prints live progress and then a structural report (a real run over the full GloVe dataset — see [Measured results](#measured-results)):
+The build prints live progress and then a structural report (a real run over the full GloVe dataset; see [Measured results](#measured-results)):
 
 ```
   inserted 1183514 / 1183514 (100.0%)  2162 vec/s  547.5 s elapsed
@@ -260,7 +261,7 @@ pip install numpy h5py
 python python/convert_hdf5.py --download --output-dir data
 ```
 
-This writes `data/base.fbin`, `data/query.fbin`, `data/groundtruth.ibin`, plus `data/subset100k.fbin` and a **recomputed** `data/groundtruth_subset100k.ibin`. The recomputation matters: the shipped ground truth indexes the full base set, so it is simply wrong for a subset — measuring recall on `subset100k.fbin` against `groundtruth.ibin` would produce meaningless numbers.
+This writes `data/base.fbin`, `data/query.fbin`, `data/groundtruth.ibin`, plus `data/subset100k.fbin` and a **recomputed** `data/groundtruth_subset100k.ibin`. The recomputation matters: the shipped ground truth indexes the full base set, so it is simply wrong for a subset: measuring recall on `subset100k.fbin` against `groundtruth.ibin` would produce meaningless numbers.
 
 See [`data/README.md`](data/README.md) for details.
 
@@ -293,11 +294,27 @@ python python/faiss_reference.py \
     --M 16 --ef-construction 200 --csv results/faiss.csv
 ```
 
-Both scripts emit the same five columns, so the two CSVs can be diffed or plotted directly against each other.
+Both scripts emit the same five columns, so the two CSVs can be diffed or plotted directly
+against each other. To redraw the chart at the top of [Measured results](#measured-results)
+from whatever CSVs are present:
+
+```bash
+python3 python/plot_results.py
+```
+
+It writes `results/benchmark_light.svg` and `results/benchmark_dark.svg` and needs no
+plotting library.
 
 ## Measured results
 
 All numbers below are real runs on **glove-100-angular** (1,183,514 × 100, all 10,000 queries, `k = 10`), on an **Apple M4, single thread, Release build (`-O3`, no `-march=native`)**.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="results/benchmark_dark.svg">
+  <img alt="Recall@10 versus queries per second on glove-100-angular: three curves (this implementation at M=16 and M=32, and FAISS at M=16) sweeping efSearch from 16 to 512, with the exact-scan baseline at 41.8 QPS" src="results/benchmark_light.svg" width="100%">
+</picture>
+
+Three things to read off the chart. The `M=32` curve sits above and to the right of `M=16` everywhere, so it is a strictly better operating curve for any recall a caller actually wants. This implementation and FAISS trace nearly the same line at `M=16`, which is the recall-parity result discussed below. And the exact scan sits two decades below everything, at 41.8 QPS.
 
 ### Full dataset, M = 16, efConstruction = 200
 
@@ -312,7 +329,22 @@ All numbers below are real runs on **glove-100-angular** (1,183,514 × 100, all 
 
 Exact brute force over the same base set: **23.892 ms** median, 41.8 QPS (measured on 1,000 queries), recall 1.0 by definition.
 
-Build: 1,183,514 vectors in **547 s** (2,162 vectors/s, single-threaded). Memory: 451 MiB of vectors + 236 MiB of graph, 30,600,519 directed edges. Level occupancy decayed as 1,183,514 → 73,770 → 4,627 → 290 → 21 → 1 — a factor of 1/16.04 at the first step, against the 1/M = 1/16 the theory predicts for `mL = 1/ln(M)`.
+Build: 1,183,514 vectors in **547 s** (2,162 vectors/s, single-threaded). Memory: 451 MiB of vectors + 236 MiB of graph, 30,600,519 directed edges. Level occupancy decayed as 1,183,514 → 73,770 → 4,627 → 290 → 21 → 1, a factor of 1/16.04 at the first step, against the 1/M = 1/16 the theory predicts for `mL = 1/ln(M)`.
+
+### Full dataset, M = 32, efConstruction = 200
+
+| ef | Recall@10 | median (ms) | p95 (ms) | QPS |
+|---|---|---|---|---|
+| 16 | 0.6823 | 0.088 | 0.139 | 10,889 |
+| 32 | 0.7736 | 0.147 | 0.220 | 6,651 |
+| 64 | 0.8457 | 0.260 | 0.355 | 3,890 |
+| 128 | 0.9004 | 0.470 | 0.605 | 2,187 |
+| 256 | 0.9413 | 0.863 | 1.100 | 1,202 |
+| 512 | **0.9706** | 1.594 | 2.085 | 648 |
+
+Doubling `M` lifts recall by 4–7 points across the sweep: 0.9004 at ef=128 beats anything `M=16` reaches at any beam width. Memory grows to 451 MiB of vectors + 379 MiB of graph (60,468,410 edges), and the top layer drops from 5 to 4 because a denser graph needs fewer levels to stay navigable.
+
+**Build cost scales worse than linearly in `M`: 3,225 s at 367 vectors/s, 5.9× slower than `M=16` for 2× the links.** The neighbor selection heuristic is the reason: each reverse-edge repair compares a candidate against every already-selected neighbor, so it is O(Mmax²) per repair, and `Mmax0` went from 32 to 64. This is the single strongest argument for the parallel construction listed in the roadmap.
 
 ### Parameter study (100k subset, same 10,000 queries)
 
@@ -331,32 +363,50 @@ The recall ceiling additionally tightens as `n` grows at fixed `M`: `M=16` reach
 
 ### Reading the speedup column
 
-An exact scan is `O(n·d)` per query; an HNSW search is roughly `O(ef · M · d · log n)`. The advantage therefore grows with `n` — at 1.18M vectors, HNSW is **25× faster than brute force even at its most conservative setting** (ef=512, 93% recall) and 154× faster at 77% recall. The exact scan needs 23.9 ms per query; the graph answers in under 1 ms.
+An exact scan is `O(n·d)` per query; an HNSW search is roughly `O(ef · M · d · log n)`. The advantage therefore grows with `n`: at 1.18M vectors, HNSW is **25× faster than brute force even at its most conservative setting** (ef=512, 93% recall) and 154× faster at 77% recall. The exact scan needs 23.9 ms per query; the graph answers in under 1 ms.
 
 ## Performance discussion
 
 ### Against brute force
 
-Brute force is exact and cache-friendly — it streams contiguous memory and vectorizes perfectly — but it is linear in the dataset size. HNSW is logarithmic-ish but pays with **random access**: every hop follows a pointer to an unpredictable location in the vector store. That is why the crossover point matters. Below a few thousand vectors, a linear scan wins outright; above roughly 10⁴ it loses badly, and the gap widens with `n`.
+Brute force is exact and cache-friendly (it streams contiguous memory and vectorizes perfectly), but it is linear in the dataset size. HNSW is logarithmic-ish but pays with **random access**: every hop follows a pointer to an unpredictable location in the vector store. That is why the crossover point matters. Below a few thousand vectors, a linear scan wins outright; above roughly 10⁴ it loses badly, and the gap widens with `n`.
 
 ### Against FAISS
 
-`faiss::IndexHNSWFlat` implements the same algorithm. Expect it to be meaningfully faster per query at equal recall — the gap is *not* algorithmic, it is engineering, and it comes from four places:
+`faiss::IndexHNSWFlat` implements the same algorithm, so it is the right yardstick. Measured head to head at **identical parameters** (`M=16`, `efConstruction=200`, same base, same queries, same ground truth, batch size 1, single thread, `faiss-cpu` 1.14.3):
+
+| ef | recall (this) | recall (FAISS) | median ms (this) | median ms (FAISS) |
+|---|---|---|---|---|
+| 16 | 0.5702 | 0.5683 | 0.053 | 0.056 |
+| 32 | 0.6789 | 0.6804 | 0.088 | 0.091 |
+| 64 | 0.7666 | 0.7680 | 0.155 | 0.162 |
+| 128 | 0.8344 | 0.8347 | 0.281 | 0.307 |
+| 256 | 0.8866 | 0.8835 | 0.516 | 0.602 |
+| 512 | 0.9274 | 0.9222 | 0.955 | 1.215 |
+
+**Recall matches within ±0.005 at every single `ef`.** That is the result that matters: it is strong evidence that the construction algorithm here (the diversity heuristic, the reverse-edge repair, the level distribution) is faithful to the paper, because a subtly wrong graph shows up as a recall deficit that no amount of query-time tuning hides.
+
+Latency came out 3–21% *lower* than FAISS, which contradicted the prediction originally written in this section, so it was checked rather than celebrated:
+
+- **Python call overhead was measured, not assumed.** Driving FAISS one query at a time through its Python API costs 5.5 µs per `search()` call (measured against a 1,000-vector index, where the graph work is negligible). That is ~10% of the ef=16 median but ~0.5% at ef=512, so it explains the small-`ef` gap entirely and the large-`ef` gap not at all.
+- **The metric asymmetry runs the other way.** `faiss_reference.py` uses `METRIC_L2` on normalized vectors, which ranks identically to cosine. Microbenchmarked at d=100, this project's `squaredL2Distance` costs 23.98 ns and its `cosineDistance` 31.92 ns, so the metric FAISS uses is the *cheaper* one, and the comparison does not flatter this implementation.
+
+The honest reading: at these parameters, on this machine, in single-query mode, the two are within a small constant factor of each other, with this implementation modestly ahead at large `ef`. That is a narrower gap than expected, and it should not be over-read: it is one machine, one dataset, one configuration, and FAISS's real advantages lie elsewhere:
+
+- **Parallel construction, which is decisive.** Building `M=32` here took 54 minutes single-threaded. FAISS and hnswlib insert concurrently and would use every core. This is the largest practical gap in the project and the top item on the roadmap.
+- **Batched search**, where FAISS amortizes memory latency across queries; the benchmark here deliberately measures batch size 1 to model online serving.
+- **Quantization** (`IndexHNSWSQ`, `IndexHNSWPQ`) to cut memory traffic ~4× for a small recall cost; not implemented here.
+- **Breadth**: GPU support, IVF hybrids, filtered search, a decade of hardening.
+
+The remaining single-query engineering headroom in *this* codebase is unchanged by the comparison, and comes from three places:
 
 **1. SIMD.** The kernels in `distance.cpp` are deliberately plain scalar loops, as specified. At `-O3` the compiler auto-vectorizes them, but not as well as hand-written intrinsics: FAISS dispatches to AVX2/AVX-512 (or NEON) kernels with explicit unrolling, FMA and horizontal reductions tuned per dimension. For 100-dimensional float32, a hand-tuned kernel is typically **2–4×** faster than the auto-vectorized loop. Enabling `-DHNSW_ENABLE_NATIVE_ARCH=ON` recovers part of this at zero code cost; the next step would be `distance_avx2.cpp` / `distance_neon.cpp` selected at runtime.
 
 **2. Cache locality and prefetching.** During a beam search the CPU stalls on the vector fetch for each neighbor. FAISS (and hnswlib) issue `_mm_prefetch` on the next neighbor's vector and adjacency list while computing the current distance, hiding most of the latency. This implementation does none of that; adding software prefetch into the neighbor loop of `searchLayer` is the single highest-value optimization left, typically worth 20–40%.
 
-**3. Memory layout.** Here, adjacency lists are `std::vector<std::vector<uint32_t>>` — one heap allocation per node per layer, so neighbors are scattered and each hop costs an extra indirection. Production implementations store layer 0 as a **single flat array** with a fixed stride (`Mmax0 + 1` slots per node) and, crucially, **interleave the vector with its neighbor list** so that one cache line fetch delivers both. That layout alone is worth a large fraction of the remaining gap. The interface here is designed so this change stays inside `graph.cpp`.
+**3. Memory layout.** Here, adjacency lists are `std::vector<std::vector<uint32_t>>`, one heap allocation per node per layer, so neighbors are scattered and each hop costs an extra indirection. Production implementations store layer 0 as a **single flat array** with a fixed stride (`Mmax0 + 1` slots per node) and, crucially, **interleave the vector with its neighbor list** so that one cache line fetch delivers both. That layout alone is worth a large fraction of the remaining gap. The interface here is designed so this change stays inside `graph.cpp`.
 
-**4. Quantization.** FAISS can put a scalar-quantized or PQ-compressed vector store behind the same graph (`IndexHNSWSQ`, `IndexHNSWPQ`), cutting memory traffic 4× at a small recall cost. This project stores raw `float32` only.
-
-Two further gaps are about scale rather than speed per query:
-
-- **Parallel construction.** Building is single-threaded here (correctness first: no locks, fully deterministic given a seed). FAISS and hnswlib insert concurrently with per-node locks, which is a near-linear speedup on the build. The search path is already thread-safe.
-- **Batch queries.** The benchmark measures batch size 1 to model online serving. Batched search amortizes memory latency across queries and looks better on a throughput chart.
-
-What this implementation does *not* concede is recall: at equal `M`, `efConstruction` and `efSearch`, the graph built here should reach recall parity with FAISS, because the construction algorithm — including the diversity heuristic and the reverse-edge repair — follows the paper exactly. If the recall column of the two CSVs matches while the latency column does not, the difference is entirely in the four items above.
+None of these three has been applied, which is worth keeping in mind when reading the comparison above: the measured latency parity was achieved *without* SIMD intrinsics, without prefetching and on a pointer-chasing adjacency layout. The headroom is real and unspent.
 
 ### Engineering trade-offs taken deliberately
 
@@ -390,9 +440,9 @@ Five self-contained binaries, no external test framework:
 
 **What is production-shaped.** Header/source separation with a documented public API; RAII throughout with no owning raw pointers and no manual `new`/`delete`; const-correct interfaces (searching takes a `const` index); errors reported as exceptions with actionable messages rather than silent failure or `assert`; deterministic, seeded construction; a versioned, magic-checked serialization format that refuses to load a foreign or truncated file; a CLI that validates its own flags; a benchmark harness that reports percentiles rather than only averages.
 
-**What it is not, yet.** This is a portfolio-grade single-node engine, not a vector database. It has no deletions or updates (HNSW supports soft deletes with tombstones and periodic rebuilds — not implemented), no concurrent insertion, no memory-mapped index (`load` reads the whole file into RAM, so the index must fit in memory), no filtered or hybrid search, no quantization, and no persistence beyond a single flat file. The distance kernels are scalar by design.
+**What it is not, yet.** This is a portfolio-grade single-node engine, not a vector database. It has no deletions or updates (HNSW supports soft deletes with tombstones and periodic rebuilds, not implemented), no concurrent insertion, no memory-mapped index (`load` reads the whole file into RAM, so the index must fit in memory), no filtered or hybrid search, no quantization, and no persistence beyond a single flat file. The distance kernels are scalar by design.
 
-**Roadmap, in the order that would actually pay off:** software prefetch in `searchLayer` → flat, stride-based layer-0 storage with the vector interleaved → SIMD kernels with runtime dispatch → parallel construction → memory-mapped load → soft deletes.
+**Roadmap, reordered by what the measurements actually showed:** parallel construction first, because query latency already matches FAISS but a 54-minute single-threaded build at `M=32` is the one number that would block real use; then software prefetch in `searchLayer`, flat stride-based layer-0 storage with the vector interleaved, SIMD kernels with runtime dispatch, memory-mapped load, and soft deletes.
 
 ## References
 
@@ -402,4 +452,4 @@ Five self-contained binaries, no external test framework:
 
 ## License
 
-Released under the MIT License — see [`LICENSE`](LICENSE).
+Released under the MIT License; see [`LICENSE`](LICENSE).

@@ -28,8 +28,8 @@ data/*.fbin
 data/*.ibin
 *.hnsw
 
-# Benchmark output
-results/*.csv
+# Benchmark output. The CSVs and the generated chart are small and are the
+# evidence behind the README's numbers, so they are tracked; raster dumps are not.
 results/*.png
 !results/.gitkeep
 
